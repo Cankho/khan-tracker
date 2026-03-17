@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#080c14">
-<link rel="apple-touch-icon" href="crecimiento.png">
 <title>Khan — Trading Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -609,6 +608,37 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); min-
   </div>
 </div>
 
+<!-- MODAL: DESCARTAR SEÑAL -->
+<div class="modal-overlay" id="modal-descartar">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="descartar-title">Descartar señal</div>
+      <div class="modal-subtitle" id="descartar-subtitle"></div>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <div class="field-label">Razón del descarte</div>
+        <select class="field-select" id="desc-categoria">
+          <option value="NO COINCIDO">No coincido con el setup técnico</option>
+          <option value="SIN CAPITAL">No tenía capital disponible</option>
+          <option value="NO VI">No vi el mensaje / dormía</option>
+          <option value="PRECIO PASADO">Cuando lo vi el precio ya había corrido</option>
+          <option value="OTRO">Otro motivo</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Comentario adicional (opcional)</div>
+        <textarea class="field-textarea" id="desc-critica" placeholder="Ej: El SL me parecía muy ajustado, no me convencía la estructura..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-descartar')">Cancelar</button>
+      <button class="btn-confirm danger" onclick="confirmarDescartar()">Descartar señal</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -768,7 +798,7 @@ function tradeCardHTML(t, tipo) {
 
   const actionBtn = tipo === 'señal'
     ? `<button class="btn-activar" onclick="event.stopPropagation();openModalActivar('${id}')">Activar →</button>
-       <button class="btn-descartar" onclick="event.stopPropagation();descartarTrade('${id}')">✕</button>`
+       <button class="btn-descartar" onclick="event.stopPropagation();openModalDescartar('${id}')">✕</button>`
     : `<button class="btn-cerrar" onclick="event.stopPropagation();openModalCerrar('${id}')">Cerrar</button>`;
 
   return `
@@ -1079,12 +1109,30 @@ function formatDatetimeLocal(d) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-async function descartarTrade(id) {
-  if (!confirm('¿Descartar esta señal? Quedará registrada como no tomada.')) return;
+function openModalDescartar(id) {
+  selectedTradeId = id;
+  const t = allAbiertos.find(x => x['ID_TRADE'] === id);
+  if (!t) return;
+  const par = (t['PAR'] || '').replace('USDT', '');
+  document.getElementById('descartar-title').textContent = `Descartar ${par}`;
+  document.getElementById('descartar-subtitle').textContent = `${t['DIRECCIÓN']} · Entrada ${formatPrice(parseFloat(t['ENTRADA']))} · ${t['TF']}`;
+  document.getElementById('desc-categoria').value = 'NO COINCIDO';
+  document.getElementById('desc-critica').value = '';
+  document.getElementById('modal-descartar').classList.add('open');
+}
+
+async function confirmarDescartar() {
+  if (!selectedTradeId) return;
   try {
-    const res = await postToSheet({ action: 'descartar', id_trade: id });
+    const res = await postToSheet({
+      action: 'descartar',
+      id_trade: selectedTradeId,
+      categoria_descarte: document.getElementById('desc-categoria').value,
+      critica_descarte: document.getElementById('desc-critica').value
+    });
     if (res.ok) {
       showToast('Señal descartada', '');
+      closeModal('modal-descartar');
       await loadData();
     } else {
       showToast(res.mensaje || 'Error', 'error');
