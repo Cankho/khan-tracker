@@ -209,6 +209,13 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); min-
   cursor: pointer; transition: all 0.15s;
 }
 .btn-cerrar:hover { background: rgba(255,61,90,0.2); }
+.btn-descartar {
+  padding: 5px 10px; border-radius: 6px;
+  background: none; border: 1px solid var(--border2);
+  color: var(--text3); font-size: 11px; font-family: var(--mono);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-descartar:hover { border-color: var(--red); color: var(--red); }
 
 /* ── PROGRESS BAR ── */
 .progress-wrap { margin-top: 8px; }
@@ -715,7 +722,7 @@ function renderSummary() {
 }
 
 function renderSenales() {
-  const senales = allAbiertos.filter(t => t['INICIADO'] !== 'YES');
+  const senales = allAbiertos.filter(t => t['INICIADO'] !== 'YES' && t['INICIADO'] !== 'DESCARTADO');
   const el = document.getElementById('list-senales');
   if (!senales.length) { el.innerHTML = '<div class="empty-state">No hay señales pendientes de evaluar</div>'; return; }
   el.innerHTML = senales.map(t => tradeCardHTML(t, 'señal')).join('');
@@ -762,7 +769,8 @@ function tradeCardHTML(t, tipo) {
   const margenReal = t['MARGEN_REAL'] || t['MARGEN USDT'];
 
   const actionBtn = tipo === 'señal'
-    ? `<button class="btn-activar" onclick="event.stopPropagation();openModalActivar('${id}')">Activar →</button>`
+    ? `<button class="btn-activar" onclick="event.stopPropagation();openModalActivar('${id}')">Activar →</button>
+       <button class="btn-descartar" onclick="event.stopPropagation();descartarTrade('${id}')">✕</button>`
     : `<button class="btn-cerrar" onclick="event.stopPropagation();openModalCerrar('${id}')">Cerrar</button>`;
 
   return `
@@ -1071,6 +1079,21 @@ function formatPrice(p) {
 function formatDatetimeLocal(d) {
   const pad = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function descartarTrade(id) {
+  if (!confirm('¿Descartar esta señal? Quedará registrada como no tomada.')) return;
+  try {
+    const res = await postToSheet({ action: 'descartar', id_trade: id });
+    if (res.ok) {
+      showToast('Señal descartada', '');
+      await loadData();
+    } else {
+      showToast(res.mensaje || 'Error', 'error');
+    }
+  } catch(e) {
+    showToast('Error de conexión', 'error');
+  }
 }
 
 function showToast(msg, type = '') {
