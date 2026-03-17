@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e1a">
+<title>Khan Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #111827;
+  --bg3: #1a2235;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8edf5;
+  --text2: #8899b0;
+  --text3: #4a5568;
+  --green: #10d97e;
+  --green-bg: rgba(16,217,126,0.1);
+  --green-border: rgba(16,217,126,0.25);
+  --red: #ff4757;
+  --red-bg: rgba(255,71,87,0.1);
+  --red-border: rgba(255,71,87,0.25);
+  --amber: #ffb020;
+  --amber-bg: rgba(255,176,32,0.1);
+  --amber-border: rgba(255,176,32,0.25);
+  --blue: #4a9eff;
+  --blue-bg: rgba(74,158,255,0.1);
+  --blue-border: rgba(74,158,255,0.25);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+/* CONFIG SCREEN */
+#config-screen {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px 24px;
+}
+.config-logo {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.2em; color: var(--text3); text-transform: uppercase;
+  margin-bottom: 48px;
+}
+.config-logo span { color: var(--green); }
+.config-card {
+  width: 100%; max-width: 360px;
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: 16px; padding: 28px 24px;
+}
+.config-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.config-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
+.config-label { font-size: 11px; font-weight: 500; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+.config-input {
+  width: 100%; background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: 10px; padding: 12px 14px; color: var(--text);
+  font-family: var(--mono); font-size: 12px; outline: none;
+  transition: border-color 0.2s;
+}
+.config-input:focus { border-color: var(--green); }
+.config-input::placeholder { color: var(--text3); }
+.config-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: var(--green); color: #0a0e1a;
+  font-family: var(--sans); font-size: 14px; font-weight: 700;
+  border: none; border-radius: 10px; cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.config-btn:active { transform: scale(0.98); opacity: 0.9; }
+.config-hint { font-size: 11px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.6; }
+
+/* MAIN APP */
+#app { display: none; max-width: 480px; margin: 0 auto; padding-bottom: 32px; }
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(10,14,26,0.92); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left { display: flex; flex-direction: column; gap: 2px; }
+.header-title { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; }
+.header-title span { color: var(--green); }
+.header-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.refresh-btn {
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: 8px; padding: 7px 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+}
+.refresh-btn:active { background: var(--border); }
+.settings-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); font-size: 18px; padding: 4px;
+  line-height: 1;
+}
+
+/* SUMMARY BAR */
+.summary {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px; padding: 16px 16px 0;
+}
+.sum-card {
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 12px 10px; text-align: center;
+}
+.sum-label { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.04em; margin-bottom: 4px; }
+.sum-val { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--text); }
+.sum-val.g { color: var(--green); }
+.sum-val.r { color: var(--red); }
+.sum-val.a { color: var(--amber); }
+
+/* FILTERS */
+.filters { display: flex; gap: 6px; padding: 14px 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filter-btn {
+  flex-shrink: 0; padding: 5px 12px;
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: 99px; font-size: 11px; font-family: var(--mono);
+  color: var(--text2); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-btn.active { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+
+/* TRADES TABLE */
+.trades-wrap { padding: 0 16px; }
+.table-header {
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+  gap: 0; padding: 8px 10px;
+  font-size: 10px; font-family: var(--mono); color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-bottom: 0.5px solid var(--border);
+}
+.trade-row {
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+  gap: 0; padding: 12px 10px;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+  align-items: center;
+}
+.trade-row:active { background: var(--bg2); }
+.trade-row:last-child { border-bottom: none; }
+
+.col-par { display: flex; flex-direction: column; gap: 3px; }
+.par-name { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.par-badges { display: flex; gap: 4px; align-items: center; }
+.badge-dir {
+  font-size: 9px; font-family: var(--mono); font-weight: 700;
+  padding: 1px 5px; border-radius: 3px;
+}
+.badge-long { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-border); }
+.badge-short { background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-border); }
+.badge-tf { font-size: 9px; font-family: var(--mono); color: var(--text3); }
+
+.col-val { font-family: var(--mono); font-size: 11px; color: var(--text); }
+.col-val.sub { color: var(--text2); }
+
+.pnl-pos { color: var(--green); font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.pnl-neg { color: var(--red); font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.pnl-neu { color: var(--text2); font-family: var(--mono); font-size: 12px; font-weight: 700; }
+
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px;
+}
+.dot-profit { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.dot-stopzone { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+.dot-belowstop { background: var(--red); box-shadow: 0 0 4px var(--red); animation: pulse 1.2s infinite; }
+.dot-entrada { background: var(--blue); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.next-tp-label { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.next-tp-val { font-size: 10px; font-family: var(--mono); color: var(--text2); }
+
+/* DETAIL PANEL */
+.detail-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  align-items: flex-end;
+}
+.detail-overlay.open { display: flex; }
+.detail-panel {
+  width: 100%; max-width: 480px; margin: 0 auto;
+  background: var(--bg2); border-radius: 20px 20px 0 0;
+  border-top: 0.5px solid var(--border2);
+  padding: 0 0 40px; max-height: 85vh; overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.detail-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 14px auto 20px; }
+.detail-header { padding: 0 20px 16px; border-bottom: 0.5px solid var(--border); }
+.detail-par { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+.detail-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.detail-section { padding: 16px 20px; border-bottom: 0.5px solid var(--border); }
+.detail-section-title { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.detail-item { }
+.detail-item-label { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-bottom: 3px; }
+.detail-item-val { font-size: 14px; font-family: var(--mono); font-weight: 500; color: var(--text); }
+.detail-item-val.g { color: var(--green); }
+.detail-item-val.r { color: var(--red); }
+.detail-item-val.a { color: var(--amber); }
+
+/* TPs list */
+.tp-list { display: flex; flex-direction: column; gap: 8px; }
+.tp-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--bg3); border: 0.5px solid var(--border);
+}
+.tp-item.reached { background: var(--green-bg); border-color: var(--green-border); }
+.tp-item.next-up { border-color: var(--blue-border); }
+.tp-label { font-size: 11px; font-family: var(--mono); color: var(--text2); }
+.tp-price { font-size: 12px; font-family: var(--mono); font-weight: 700; }
+.tp-pct { font-size: 11px; font-family: var(--mono); }
+.tp-pct.pos { color: var(--green); }
+.tp-pct.neg { color: var(--red); }
+.tp-check { font-size: 12px; margin-left: 6px; }
+
+/* PROGRESS BAR in detail */
+.progress-wrap { margin: 4px 0 8px; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 10px; font-family: var(--mono); color: var(--text3); margin-bottom: 4px; }
+.progress-track { height: 3px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; }
+.progress-fill.profit { background: var(--green); }
+.progress-fill.stopzone { background: var(--amber); }
+.progress-fill.belowstop { background: var(--red); }
+.progress-fill.entrada { background: var(--blue); }
+
+/* LOADING / EMPTY */
+.state-msg { text-align: center; padding: 60px 24px; font-size: 13px; color: var(--text3); font-family: var(--mono); }
+.state-msg .icon { font-size: 28px; margin-bottom: 12px; }
+
+/* ERROR TOAST */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--red-bg); border: 0.5px solid var(--red-border);
+  color: var(--red); padding: 10px 20px; border-radius: 99px;
+  font-size: 12px; font-family: var(--mono); z-index: 200;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- CONFIG SCREEN -->
+<div id="config-screen">
+  <div class="config-logo">SISTEMA <span>KHAN</span> · TRACKER</div>
+  <div class="config-card">
+    <div class="config-title">Configuración inicial</div>
+    <div class="config-desc">Pegá la URL de tu Google Apps Script para conectar con el Sheet de posiciones. Solo se guarda en este dispositivo.</div>
+    <div class="config-label">URL del Apps Script</div>
+    <input class="config-input" id="url-input" type="url" placeholder="https://script.google.com/macros/s/..." />
+    <button class="config-btn" onclick="saveConfig()">Conectar</button>
+    <div class="config-hint">La URL no se comparte ni se almacena en ningún servidor. Solo queda guardada en tu navegador.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title">KHAN <span>▸</span> TRACKER</div>
+      <div class="header-sub" id="last-update">—</div>
+    </div>
+    <div class="header-right">
+      <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
+      <button class="settings-btn" onclick="resetConfig()" title="Cambiar URL">⚙</button>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+  <div class="filters" id="filters"></div>
+  <div class="trades-wrap">
+    <div class="table-header">
+      <div>Par</div>
+      <div>Entrada</div>
+      <div>Actual</div>
+      <div>PNL</div>
+      <div>Next TP</div>
+    </div>
+    <div id="trades-list"></div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detail-panel"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'khan_tracker_url';
+let allTrades = [];
+let activeFilter = 'todos';
+let selectedTrade = null;
+
+function saveConfig() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    showToast('URL inválida — debe ser de script.google.com');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, url);
+  document.getElementById('config-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadData();
+}
+
+function resetConfig() {
+  if (!confirm('¿Cambiar la URL del Apps Script?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function init() {
+  const url = localStorage.getItem(STORAGE_KEY);
+  if (url) {
+    document.getElementById('config-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadData();
+  }
+}
+
+async function loadData() {
+  const url = localStorage.getItem(STORAGE_KEY);
+  if (!url) return;
+  document.getElementById('trades-list').innerHTML = '<div class="state-msg"><div>Cargando...</div></div>';
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    allTrades = (json.trades || []).filter(t => t['PAR']);
+    const ts = new Date(json.updated);
+    document.getElementById('last-update').textContent =
+      ts.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}) + ' · ' +
+      ts.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit'});
+    renderAll();
+  } catch(e) {
+    document.getElementById('trades-list').innerHTML = '<div class="state-msg"><div>⚠ Error al cargar datos</div></div>';
+    showToast('No se pudo conectar con el Sheet');
+  }
+}
+
+function getStatus(t) {
+  const isLong = t['DIRECCIÓN'] === 'LONG';
+  const actual = parseFloat(t['PRECIO ACTUAL']) || parseFloat(t['ENTRADA']);
+  const entrada = parseFloat(t['ENTRADA']);
+  const sl = parseFloat(t['STOP LOSS']);
+  if (!actual || !entrada || !sl) return 'entrada';
+  const slHit = isLong ? actual <= sl : actual >= sl;
+  const slNear = isLong ? actual <= sl * 1.015 : actual >= sl * 0.985;
+  const inProfit = isLong ? actual > entrada : actual < entrada;
+  if (slHit) return 'belowstop';
+  if (slNear) return 'stopzone';
+  if (inProfit) return 'profit';
+  return 'entrada';
+}
+
+function getPnl(t) {
+  const actual = parseFloat(t['PRECIO ACTUAL']);
+  const entrada = parseFloat(t['ENTRADA']);
+  if (!actual || !entrada) return null;
+  return t['DIRECCIÓN'] === 'LONG'
+    ? ((actual - entrada) / entrada) * 100
+    : ((entrada - actual) / entrada) * 100;
+}
+
+function getNextTp(t) {
+  const actual = parseFloat(t['PRECIO ACTUAL']) || parseFloat(t['ENTRADA']);
+  const isLong = t['DIRECCIÓN'] === 'LONG';
+  const tpKeys = ['TP1','TP2','TP3','TP4','TP TOP'];
+  for (const key of tpKeys) {
+    const tp = parseFloat(t[key]);
+    if (!tp) continue;
+    if (isLong && actual < tp) return {label: key, price: tp};
+    if (!isLong && actual > tp) return {label: key, price: tp};
+  }
+  return {label: 'TP TOP', price: parseFloat(t['TP TOP'])};
+}
+
+function getBarPct(t) {
+  const actual = parseFloat(t['PRECIO ACTUAL']) || parseFloat(t['ENTRADA']);
+  const sl = parseFloat(t['STOP LOSS']);
+  const tptop = parseFloat(t['TP TOP']);
+  const isLong = t['DIRECCIÓN'] === 'LONG';
+  if (!actual || !sl || !tptop) return 0;
+  const range = Math.abs(tptop - sl);
+  const progress = isLong ? actual - sl : sl - actual;
+  return Math.min(100, Math.max(0, (progress / range) * 100));
+}
+
+function formatPrice(p) {
+  if (!p || isNaN(p)) return '—';
+  const n = parseFloat(p);
+  if (n >= 10000) return n.toLocaleString('es-AR', {maximumFractionDigits: 0});
+  if (n >= 100) return n.toFixed(2);
+  if (n >= 1) return n.toFixed(4);
+  return n.toFixed(5);
+}
+
+function getDaysOpen(fecha) {
+  if (!fecha) return '—';
+  try {
+    const d = new Date(fecha);
+    const diff = Math.floor((new Date() - d) / 86400000);
+    if (diff === 0) return 'hoy';
+    if (diff === 1) return '1d';
+    return diff + 'd';
+  } catch(e) { return '—'; }
+}
+
+function renderAll() {
+  renderSummary();
+  renderFilters();
+  renderTrades();
+}
+
+function renderSummary() {
+  const filtered = allTrades;
+  let profit = 0, watch = 0, totalPnl = 0, pnlCount = 0;
+  filtered.forEach(t => {
+    const s = getStatus(t);
+    if (s === 'profit') profit++;
+    if (s === 'stopzone' || s === 'belowstop') watch++;
+    const pnl = getPnl(t);
+    if (pnl !== null) { totalPnl += pnl; pnlCount++; }
+  });
+  const avgPnl = pnlCount ? totalPnl / pnlCount : 0;
+  const pnlStr = (avgPnl >= 0 ? '+' : '') + avgPnl.toFixed(1) + '%';
+  document.getElementById('summary').innerHTML = `
+    <div class="sum-card"><div class="sum-label">activas</div><div class="sum-val">${filtered.length}</div></div>
+    <div class="sum-card"><div class="sum-label">profit</div><div class="sum-val g">${profit}</div></div>
+    <div class="sum-card"><div class="sum-label">atención</div><div class="sum-val a">${watch}</div></div>
+    <div class="sum-card"><div class="sum-label">pnl avg</div><div class="sum-val ${avgPnl >= 0 ? 'g' : 'r'}">${pnlStr}</div></div>
+  `;
+}
+
+function renderFilters() {
+  const filters = ['todos','profit','stop zone','below stop','zona entrada'];
+  document.getElementById('filters').innerHTML = filters.map(f =>
+    `<button class="filter-btn ${activeFilter===f?'active':''}" onclick="setFilter('${f}')">${f}</button>`
+  ).join('');
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  renderFilters();
+  renderTrades();
+}
+
+function renderTrades() {
+  const statusMap = {'profit':'profit','stop zone':'stopzone','below stop':'belowstop','zona entrada':'entrada'};
+  const filtered = activeFilter === 'todos'
+    ? allTrades
+    : allTrades.filter(t => getStatus(t) === statusMap[activeFilter]);
+
+  if (!filtered.length) {
+    document.getElementById('trades-list').innerHTML = '<div class="state-msg"><div>Sin posiciones en esta categoría</div></div>';
+    return;
+  }
+
+  document.getElementById('trades-list').innerHTML = filtered.map((t, i) => {
+    const status = getStatus(t);
+    const pnl = getPnl(t);
+    const pnlStr = pnl !== null ? (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%' : '—';
+    const pnlClass = pnl === null ? 'pnl-neu' : pnl > 0 ? 'pnl-pos' : 'pnl-neg';
+    const nextTp = getNextTp(t);
+    const actual = parseFloat(t['PRECIO ACTUAL']);
+    const par = (t['PAR'] || '').replace('USDT','');
+    const dias = getDaysOpen(t['FECHA APERTURA']);
+
+    return `
+    <div class="trade-row" onclick="openDetail(${i})">
+      <div class="col-par">
+        <div class="par-name">${par}</div>
+        <div class="par-badges">
+          <span class="badge-dir badge-${t['DIRECCIÓN']==='LONG'?'long':'short'}">${t['DIRECCIÓN']}</span>
+          <span class="badge-tf">${t['TF']} · ${dias}</span>
+        </div>
+      </div>
+      <div class="col-val sub">${formatPrice(t['ENTRADA'])}</div>
+      <div class="col-val" style="display:flex;align-items:center;">
+        <span class="status-dot dot-${status}"></span>${actual ? formatPrice(actual) : '—'}
+      </div>
+      <div class="${pnlClass}">${pnlStr}</div>
+      <div>
+        <div class="next-tp-label">${nextTp.label}</div>
+        <div class="next-tp-val">${formatPrice(nextTp.price)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openDetail(idx) {
+  const statusMap = {'profit':'profit','stop zone':'stopzone','below stop':'belowstop','zona entrada':'entrada'};
+  const filtered = activeFilter === 'todos'
+    ? allTrades
+    : allTrades.filter(t => getStatus(t) === statusMap[activeFilter]);
+  const t = filtered[idx];
+  if (!t) return;
+
+  const status = getStatus(t);
+  const pnl = getPnl(t);
+  const pnlStr = pnl !== null ? (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + '%' : '—';
+  const pnlClass = pnl === null ? '' : pnl > 0 ? 'g' : 'r';
+  const barPct = getBarPct(t);
+  const par = (t['PAR'] || '').replace('USDT','');
+  const isLong = t['DIRECCIÓN'] === 'LONG';
+  const actual = parseFloat(t['PRECIO ACTUAL']);
+
+  const tpKeys = ['TP1','TP2','TP3','TP4','TP TOP'];
+  const tpItems = tpKeys.map(key => {
+    const tp = parseFloat(t[key]);
+    if (!tp) return '';
+    const pctFromEntrada = ((tp - parseFloat(t['ENTRADA'])) / parseFloat(t['ENTRADA'])) * 100 * (isLong ? 1 : -1);
+    const reached = actual && (isLong ? actual >= tp : actual <= tp);
+    const isNext = !reached && getNextTp(t).label === key;
+    return `<div class="tp-item ${reached?'reached':''} ${isNext?'next-up':''}">
+      <span class="tp-label">${key}</span>
+      <span class="tp-price">${formatPrice(tp)}</span>
+      <span class="tp-pct pos">+${pctFromEntrada.toFixed(2)}%</span>
+      ${reached ? '<span class="tp-check">✓</span>' : ''}
+    </div>`;
+  }).join('');
+
+  const statusLabels = {profit:'PROFIT',stopzone:'STOP ZONE',belowstop:'BELOW STOP',entrada:'ZONA ENTRADA'};
+
+  document.getElementById('detail-panel').innerHTML = `
+    <div class="detail-handle"></div>
+    <div class="detail-header">
+      <div class="detail-par">${par}USDT</div>
+      <div class="detail-meta">
+        <span class="badge-dir badge-${isLong?'long':'short'}">${t['DIRECCIÓN']}</span>
+        <span class="badge-tf">${t['TF']}</span>
+        <span class="badge-tf" style="color:var(--text2);">${statusLabels[status]}</span>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Posición</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-item-label">Entrada</div><div class="detail-item-val">${formatPrice(t['ENTRADA'])}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Actual</div><div class="detail-item-val">${actual ? formatPrice(actual) : '—'}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Stop Loss</div><div class="detail-item-val r">${formatPrice(t['STOP LOSS'])}</div></div>
+        <div class="detail-item"><div class="detail-item-label">SL %</div><div class="detail-item-val r">${t['SL %'] || '—'}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Apalancamiento</div><div class="detail-item-val">${t['APALANCAM.'] || '—'}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Margen</div><div class="detail-item-val">${t['MARGEN USDT'] ? t['MARGEN USDT'] + ' USDT' : '—'}</div></div>
+        <div class="detail-item"><div class="detail-item-label">PNL</div><div class="detail-item-val ${pnlClass}">${pnlStr}</div></div>
+        <div class="detail-item"><div class="detail-item-label">Abierto</div><div class="detail-item-val">${getDaysOpen(t['FECHA APERTURA'])}</div></div>
+      </div>
+      <div class="progress-wrap" style="margin-top:14px;">
+        <div class="progress-labels"><span>SL ${formatPrice(t['STOP LOSS'])}</span><span>TP TOP ${formatPrice(t['TP TOP'])}</span></div>
+        <div class="progress-track"><div class="progress-fill ${status}" style="width:${barPct.toFixed(1)}%"></div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Targets</div>
+      <div class="tp-list">${tpItems}</div>
+    </div>
+    ${t['NOTAS'] ? `<div class="detail-section"><div class="detail-section-title">Notas</div><div style="font-size:13px;color:var(--text2);line-height:1.6;">${t['NOTAS']}</div></div>` : ''}
+  `;
+
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail(e) {
+  if (e.target === document.getElementById('detail-overlay')) {
+    document.getElementById('detail-overlay').classList.remove('open');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
