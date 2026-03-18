@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#080c14">
 <link rel="apple-touch-icon" href="crecimiento.png">
 <title>Khan — Trading Dashboard</title>
-<link rel="preconnect" href="crecimiento.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -797,6 +797,11 @@ function tradeCardHTML(t, tipo) {
   const apalReal = t['APALANCAMIENTO_REAL'] || t['APALANCAM.'];
   const margenReal = t['MARGEN_REAL'] || t['MARGEN USDT'];
 
+  const fechaSenal = t['FECHA APERTURA'] || t['FECHA_APERTURA'];
+  const fechaActivo = t['HORA_APERTURA_REAL'] || t['FECHA APERTURA'];
+  const tiempoLabel = tipo === 'señal' ? 'Señal' : 'Abierto';
+  const tiempoVal = tipo === 'señal' ? formatElapsed(fechaSenal) : formatElapsed(fechaActivo);
+
   const actionBtn = tipo === 'señal'
     ? `<button class="btn-activar" onclick="event.stopPropagation();openModalActivar('${id}')">Activar →</button>
        <button class="btn-descartar" onclick="event.stopPropagation();openModalDescartar('${id}')">✕</button>`
@@ -834,6 +839,10 @@ function tradeCardHTML(t, tipo) {
         <div class="card-field-label">Margen</div>
         <div class="card-field-val">${margenReal} USDT</div>
       </div>` : ''}
+      <div class="card-field">
+        <div class="card-field-label">${tiempoLabel}</div>
+        <div class="card-field-val" style="color:var(--text3)">${tiempoVal}</div>
+      </div>
     </div>
     <div class="card-row3">
       <div class="card-next-tp">next → <span>${nextTp.label} ${formatPrice(nextTp.price)}</span></div>
@@ -879,6 +888,10 @@ function cerradoCardHTML(t) {
       ${razon ? `<div class="card-field">
         <div class="card-field-label">Razón</div>
         <div class="card-field-val" style="color:${razon==='EMOCIONAL'?'var(--amber)':'var(--text2)'}">${razon}</div>
+      </div>` : ''}
+      ${t['DURACIÓN_H'] ? `<div class="card-field">
+        <div class="card-field-label">Duración</div>
+        <div class="card-field-val" style="color:var(--text3)">${formatDuration(t['DURACIÓN_H'])}</div>
       </div>` : ''}
     </div>
   </div>`;
@@ -1105,7 +1118,31 @@ function formatPrice(p) {
   return p.toFixed(6);
 }
 
-function formatDatetimeLocal(d) {
+function formatElapsed(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '—';
+    const mins = Math.floor((new Date() - d) / 60000);
+    if (mins < 60) return mins + 'min';
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    if (hours < 24) return hours + 'h' + (remMins > 0 ? ' ' + remMins + 'min' : '');
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return days + 'd' + (remHours > 0 ? ' ' + remHours + 'h' : '');
+  } catch(e) { return '—'; }
+}
+
+function formatDuration(hours) {
+  if (!hours || isNaN(hours)) return '—';
+  const h = parseFloat(hours);
+  if (h < 1) return Math.round(h * 60) + 'min';
+  if (h < 24) return h.toFixed(1) + 'h';
+  const days = Math.floor(h / 24);
+  const remH = Math.round(h % 24);
+  return days + 'd' + (remH > 0 ? ' ' + remH + 'h' : '');
+}
   const pad = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
