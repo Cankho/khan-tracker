@@ -405,17 +405,23 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); min-
     <div class="modal-body">
       <div class="field-row">
         <div class="field-group">
+          <div class="field-label">Precio entrada real</div>
+          <input class="field-input" id="act-precio-real" type="number" step="any" placeholder="Precio promedio ejecutado" />
+        </div>
+        <div class="field-group">
           <div class="field-label">Margen real (USDT)</div>
           <input class="field-input" id="act-margen" type="number" placeholder="50" />
         </div>
+      </div>
+      <div class="field-row">
         <div class="field-group">
           <div class="field-label">Apalancamiento real</div>
           <input class="field-input" id="act-apal" type="number" placeholder="3" />
         </div>
-      </div>
-      <div class="field-group">
-        <div class="field-label">Hora de apertura real</div>
-        <input class="field-input" id="act-hora" type="datetime-local" />
+        <div class="field-group">
+          <div class="field-label">Hora de apertura real</div>
+          <input class="field-input" id="act-hora" type="datetime-local" />
+        </div>
       </div>
       <div class="field-group">
         <div class="field-label">Crítica de entrada (opcional)</div>
@@ -780,7 +786,8 @@ function tradeCardHTML(t, tipo) {
   let status = 'señal';
   let pnl = null;
   if (tipo === 'activo' && actual && entrada) {
-    pnl = isLong ? ((actual-entrada)/entrada)*100 : ((entrada-actual)/entrada)*100;
+    const entradaReal = parseFloat(t['PRECIO_ENTRADA_REAL']) || entrada;
+    pnl = isLong ? ((actual-entradaReal)/entradaReal)*100 : ((entradaReal-actual)/entradaReal)*100;
     const slHit = isLong ? actual<=sl : actual>=sl;
     const slNear = isLong ? actual<=sl*1.015 : actual>=sl*0.985;
     status = slHit ? 'belowstop' : slNear ? 'stopzone' : pnl>0 ? 'profit' : 'entrada';
@@ -820,7 +827,7 @@ function tradeCardHTML(t, tipo) {
     <div class="card-row2">
       <div class="card-field">
         <div class="card-field-label">Entrada</div>
-        <div class="card-field-val">${formatPrice(entrada)}</div>
+        <div class="card-field-val">${t['PRECIO_ENTRADA_REAL'] ? `<span style="color:var(--text)">${formatPrice(parseFloat(t['PRECIO_ENTRADA_REAL']))}</span> <span style="color:var(--text3);font-size:10px;">(real)</span>` : formatPrice(entrada)}</div>
       </div>
       ${tipo==='activo' && actual ? `<div class="card-field">
         <div class="card-field-label">Actual</div>
@@ -946,22 +953,24 @@ async function confirmarActivar() {
   if (!selectedTradeId) return;
   const t = allAbiertos.find(x => x['ID_TRADE'] === selectedTradeId);
   if (!t) return;
-  const entrada = parseFloat(t['ENTRADA']);
-  const precioActual = prices[t['PAR']];
+  const precioReal = parseFloat(document.getElementById('act-precio-real').value) || null;
   const margenReal = parseFloat(document.getElementById('act-margen').value);
   const apalReal = parseFloat(document.getElementById('act-apal').value);
+  const precioActual = prices[t['PAR']];
+  const entradaParaPnl = precioReal || parseFloat(t['ENTRADA']);
 
   let pnlPct = null;
   let pnlUsdt = null;
-  if (precioActual && entrada && !isNaN(margenReal) && !isNaN(apalReal)) {
+  if (precioActual && entradaParaPnl && !isNaN(margenReal) && !isNaN(apalReal)) {
     const isLong = t['DIRECCIÓN'] === 'LONG';
-    pnlPct = isLong ? ((precioActual - entrada) / entrada) * 100 : ((entrada - precioActual) / entrada) * 100;
+    pnlPct = isLong ? ((precioActual - entradaParaPnl) / entradaParaPnl) * 100 : ((entradaParaPnl - precioActual) / entradaParaPnl) * 100;
     pnlUsdt = (pnlPct / 100) * margenReal * apalReal;
   }
 
   const data = {
     action: 'activar',
     id_trade: selectedTradeId,
+    precio_entrada_real: precioReal || '',
     margen_real: margenReal || '',
     apalancamiento_real: apalReal || '',
     hora_apertura_real: document.getElementById('act-hora').value,
@@ -988,7 +997,7 @@ async function confirmarCerrar() {
   if (!t) return;
 
   const precioCierre = parseFloat(document.getElementById('cer-precio').value);
-  const entrada = parseFloat(t['ENTRADA'] || t['MARGEN_REAL']);
+  const entradaReal = parseFloat(t['PRECIO_ENTRADA_REAL']) || parseFloat(t['ENTRADA']);
   const isLong = t['DIRECCIÓN'] === 'LONG';
   const margenReal = parseFloat(t['MARGEN_REAL'] || t['MARGEN USDT'] || 50);
   const apalReal = parseFloat(t['APALANCAMIENTO_REAL'] || t['APALANCAM.'] || 1);
@@ -996,8 +1005,8 @@ async function confirmarCerrar() {
   let pnlPct = null;
   let pnlUsdt = null;
   let resultado = 'BE';
-  if (precioCierre && entrada) {
-    pnlPct = isLong ? ((precioCierre-entrada)/entrada)*100 : ((entrada-precioCierre)/entrada)*100;
+  if (precioCierre && entradaReal) {
+    pnlPct = isLong ? ((precioCierre-entradaReal)/entradaReal)*100 : ((entradaReal-precioCierre)/entradaReal)*100;
     pnlUsdt = (pnlPct/100) * margenReal * apalReal;
     resultado = pnlPct > 0.1 ? 'WIN' : pnlPct < -0.1 ? 'LOSS' : 'BE';
   }
